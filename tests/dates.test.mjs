@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {occursOn,isFullyDone,isDone,dateKey,datesBetween,dueSummary} from '../src/lib/dates.js';
+const task={date:'2026-10-13',repeat:'none',participantIds:['a'],ownerId:'a',completedDates:{}};
+test('one-time tasks occur only on due date',()=>{assert.equal(occursOn(task,'2026-10-13'),true);assert.equal(occursOn(task,'2026-10-14'),false)});
+test('daily tasks respect repeat-until',()=>{const t={...task,repeat:'daily',endDate:'2026-10-16'};assert.ok(occursOn(t,'2026-10-15'));assert.ok(!occursOn(t,'2026-10-17'))});
+test('weekly tasks use weekdays 0 Sunday to 6 Saturday',()=>{const t={...task,repeat:'weekly',weekdays:[2,4]};assert.ok(occursOn(t,'2026-10-15'));assert.ok(!occursOn(t,'2026-10-16'))});
+test('monthly tasks remain on same calendar day',()=>{const t={...task,repeat:'monthly'};assert.ok(occursOn(t,'2026-11-13'));assert.ok(!occursOn(t,'2026-11-12'))});
+test('yearly birthdays occur on anniversary',()=>{const t={...task,repeat:'yearly'};assert.ok(occursOn(t,'2027-10-13'));assert.ok(!occursOn(t,'2027-10-14'))});
+test('completed shared task requires everyone',()=>{const t={...task,participantIds:['a','b'],completedDates:{'2026-10-13':['a']}};assert.ok(isDone(t,'2026-10-13','a'));assert.ok(!isFullyDone(t,'2026-10-13'));t.completedDates['2026-10-13'].push('b');assert.ok(isFullyDone(t,'2026-10-13'))});
+test('datesBetween emits date labels and due summary counts',()=>{assert.equal(datesBetween('2026-10-13','2026-10-15').length,3);const x=dueSummary([task],'2026-10-14');assert.equal(x.overdue.length,1)});
